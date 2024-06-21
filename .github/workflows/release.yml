@@ -1,5 +1,10 @@
 # This is a workflow to create github release for a tag and publish the package to npm repo
-name: release
+name: Release
+
+permissions:
+  id-token: write
+  contents: write
+
 on:
   push:
     tags:
@@ -8,13 +13,10 @@ on:
       # v1.2.0 will trigger this action
       - "v[0-9]+.[0-9]+.[0-9]+*"
 
-permissions:
-  contents: read
-      
 jobs:
   release:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,22 +31,7 @@ jobs:
       - run: npm ci
       - name: Build js
         run: npm run build
-      - uses: actions/create-release@v1
-        env:
-          # this is provided by github, you don't need to do anything here
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: false
-          prerelease: ${{ needs.setup_variables.outputs.isLatest != 'true' }}
-      - name: Publish to NPM with latest tag
-        if: ${{ needs.setup_variables.outputs.isLatest == 'true' }}
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
-      - name: Publish to NPM with next tag
-        if: ${{ needs.setup_variables.outputs.isLatest != 'true' }}
-        run: npm publish --access public --tag next
+      - name: Publish to NPM
+        run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
